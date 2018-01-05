@@ -344,7 +344,9 @@ GetThreadId(
     return dwThreadId;
 }
 
+#ifndef __IOS__
 static THREAD_LOCAL DWORD cachedCurrentThreadId = 0;
+#endif
 /*++
 Function:
   GetCurrentThreadId
@@ -356,7 +358,9 @@ PALAPI
 GetCurrentThreadId(
             VOID)
 {
+#ifndef __IOS__
     if (cachedCurrentThreadId != 0) return cachedCurrentThreadId;
+#endif
     DWORD dwThreadId;
 
     PERF_ENTRY(GetCurrentThreadId);
@@ -367,7 +371,9 @@ GetCurrentThreadId(
     LOGEXIT("GetCurrentThreadId returns DWORD %#x\n", dwThreadId);
     PERF_EXIT(GetCurrentThreadId);
 
+#ifndef __IOS__
     cachedCurrentThreadId = dwThreadId;
+#endif
     return dwThreadId;
 }
 

@@ -61,7 +61,7 @@ C_FUNC(\Name\()_End):
 
 .macro push_nonvol_reg Register
         push \Register
-        .save \Register
+        DIRECTIVE .save \Register
 .endm
 
 .macro pop_nonvol_reg Register
@@ -70,7 +70,7 @@ C_FUNC(\Name\()_End):
 
 .macro vpush_nonvol_reg Register
         vpush \Register
-        .vsave \Register
+        DIRECTIVE .vsave \Register
 .endm
 
 .macro vpop_nonvol_reg Register
@@ -105,7 +105,7 @@ C_FUNC(\Name\()_End):
 
 .macro PUSH_ARGUMENT_REGISTERS
         push {r0-r3}
-        .save {r0-r3}
+        DIRECTIVE .save {r0-r3}
 .endm
 
 .macro pop_register Reg
@@ -211,7 +211,7 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro EMIT_BREAKPOINT
-        .inst.w 0xde01
+        DIRECTIVE .inst.w 0xde01
 .endm
 
 .macro PROLOG_PUSH RegList
@@ -223,12 +223,12 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro PROLOG_STACK_SAVE Register
-        .setfp \Register, sp
+        DIRECTIVE .setfp \Register, sp
         mov \Register, sp
 .endm
 
 .macro PROLOG_STACK_SAVE_OFFSET Register, Offset
-        .setfp \Register, sp, \Offset
+        DIRECTIVE .setfp \Register, sp, \Offset
         add \Register, sp, \Offset
 .endm
 

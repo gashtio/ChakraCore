@@ -398,7 +398,11 @@ namespace Js
             {
                 double result = ::ceil(x);
 
+#ifndef __IOS__
                 intptr_t intResult = (intptr_t)result;
+#else
+				int32 intResult = (int32)result; // TODO: devise a better-looking solition
+#endif
 
                 if (TaggedInt::IsOverflow(intResult) || JavascriptNumber::IsNegZero(result))
                 {
@@ -611,6 +615,7 @@ namespace Js
 #endif
 #endif
         {
+#ifndef __IOS__
             intptr_t intResult;
 
             if (d >= 0.0)
@@ -622,6 +627,20 @@ namespace Js
                 d = ::floor(d);
                 intResult = (intptr_t)d;
             }
+#else
+			// TODO: devise a better-looking solition...
+			int32 intResult;
+
+			if (d >= 0.0)
+			{
+				intResult = (int32)d;
+			}
+			else
+			{
+				d = ::floor(d);
+				intResult = (int32)d;
+			}
+#endif
 
             if (TaggedInt::IsOverflow(intResult) || JavascriptNumber::IsNegZero(d))
             {

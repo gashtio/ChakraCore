@@ -617,6 +617,8 @@ BuildExceptionRecord(
                 case EXC_I386_BOUND:
                     exceptionCode = EXCEPTION_ARRAY_BOUNDS_EXCEEDED;
                     break;
+#elif defined(_ARM_)
+				// No specific EXC_ARITHMETIC handling for ARM
 #else
 #error Trap code to exception mapping not defined for this architecture
 #endif
@@ -628,7 +630,7 @@ BuildExceptionRecord(
         break;
 
     case EXC_SOFTWARE:
-#if defined(_X86_) || defined(_AMD64_)
+#if defined(_X86_) || defined(_AMD64_) || defined(_ARM_)
         exceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION;
         break;
 #else
@@ -646,6 +648,11 @@ BuildExceptionRecord(
         {
             exceptionCode = EXCEPTION_BREAKPOINT;
         }
+#elif defined(_ARM_)
+		if (exceptionInfo.Subcodes[0] == EXC_ARM_BREAKPOINT)
+		{
+			exceptionCode = EXCEPTION_BREAKPOINT;
+		}
 #else
 #error Trap code to exception mapping not defined for this architecture
 #endif
@@ -747,10 +754,17 @@ HijackFaultingThread(
 #else
     threadContext.ContextFlags = CONTEXT_FLOATING_POINT;
 #endif
+#if defined(_ARM_)
+	CONTEXT_GetThreadContextFromThreadState(ARM_VFP_STATE, (thread_state_t)&exceptionInfo.FloatState, &threadContext);
+
+	threadContext.ContextFlags |= CONTEXT_CONTROL | CONTEXT_INTEGER;
+	CONTEXT_GetThreadContextFromThreadState(ARM_THREAD_STATE, (thread_state_t)&exceptionInfo.ThreadState, &threadContext);
+#else
     CONTEXT_GetThreadContextFromThreadState(x86_FLOAT_STATE, (thread_state_t)&exceptionInfo.FloatState, &threadContext);
 
     threadContext.ContextFlags |= CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS;
     CONTEXT_GetThreadContextFromThreadState(x86_THREAD_STATE, (thread_state_t)&exceptionInfo.ThreadState, &threadContext);
+#endif
 
 #if defined(CORECLR) && (defined(_X86_) || defined(_AMD64_))
     // For CoreCLR we look more deeply at access violations to determine whether they're the result of a stack
@@ -1037,6 +1051,9 @@ HijackFaultingThread(
     // Now set the thread state for the faulting thread so that PAL_DispatchException executes next
     machret = thread_set_state(thread, x86_THREAD_STATE64, (thread_state_t)&ts64, x86_THREAD_STATE64_COUNT);
     CHECK_MACH("thread_set_state(thread)", machret);
+#elif defined(_ARM_)
+	// TODO: Implement
+	abort();
 #else
 #error HijackFaultingThread not defined for this architecture
 #endif
@@ -1272,17 +1289,31 @@ MachExceptionInfo::MachExceptionInfo(mach_port_t thread, MachMessage& message)
     for (int i = 0; i < SubcodeCount; i++)
         Subcodes[i] = message.GetExceptionCode(i);
 
-    mach_msg_type_number_t count = x86_THREAD_STATE_COUNT;
-    machret = thread_get_state(thread, x86_THREAD_STATE, (thread_state_t)&ThreadState, &count);
+#if defined(_ARM_)
+    mach_msg_type_number_t count = ARM_THREAD_STATE_COUNT;
+    machret = thread_get_state(thread, ARM_THREAD_STATE, (thread_state_t)&ThreadState, &count);
     CHECK_MACH("thread_get_state", machret);
 
-    count = x86_FLOAT_STATE_COUNT;
-    machret = thread_get_state(thread, x86_FLOAT_STATE, (thread_state_t)&FloatState, &count);
+    count = ARM_VFP_STATE_COUNT;
+    machret = thread_get_state(thread, ARM_VFP_STATE, (thread_state_t)&FloatState, &count);
     CHECK_MACH("thread_get_state(float)", machret);
 
-    count = x86_DEBUG_STATE_COUNT;
-    machret = thread_get_state(thread, x86_DEBUG_STATE, (thread_state_t)&DebugState, &count);
+    count = ARM_DEBUG_STATE_COUNT;
+    machret = thread_get_state(thread, ARM_DEBUG_STATE, (thread_state_t)&DebugState, &count);
     CHECK_MACH("thread_get_state(debug)", machret);
+#else
+	mach_msg_type_number_t count = x86_THREAD_STATE_COUNT;
+	machret = thread_get_state(thread, x86_THREAD_STATE, (thread_state_t)&ThreadState, &count);
+	CHECK_MACH("thread_get_state", machret);
+
+	count = x86_FLOAT_STATE_COUNT;
+	machret = thread_get_state(thread, x86_FLOAT_STATE, (thread_state_t)&FloatState, &count);
+	CHECK_MACH("thread_get_state(float)", machret);
+
+	count = x86_DEBUG_STATE_COUNT;
+	machret = thread_get_state(thread, x86_DEBUG_STATE, (thread_state_t)&DebugState, &count);
+	CHECK_MACH("thread_get_state(debug)", machret);
+#endif
 }
 
 /*++
@@ -1297,6 +1328,7 @@ Parameters:
 Return value :
     none
 --*/
+#if defined(_X86_) || defined(_AMD64_)
 void MachExceptionInfo::RestoreState(mach_port_t thread)
 {
     // If we are restarting a breakpoint, we need to bump the IP back one to
@@ -1323,6 +1355,37 @@ void MachExceptionInfo::RestoreState(mach_port_t thread)
     machret = thread_set_state(thread, x86_DEBUG_STATE, (thread_state_t)&DebugState, x86_DEBUG_STATE_COUNT);
     CHECK_MACH("thread_set_state(debug)", machret);
 }
+#elif defined(_ARM_)
+
+#ifdef __DARWIN_UNIX03
+#define PSTATE_WRAP(a,b) (a)->__##b
+#else
+#define PSTATE_WRAP(a,b) (a)->b
+#endif
+
+void MachExceptionInfo::RestoreState(mach_port_t thread)
+{
+    // If we are restarting a breakpoint, we need to bump the IP back one to
+    // point at the actual int 3 instructions.
+    if (ExceptionType == EXC_BREAKPOINT)
+    {
+		if (Subcodes[0] == EXC_ARM_BREAKPOINT)
+		{
+			PSTATE_WRAP(&ThreadState, pc)--; // TODO: Is this correct?
+		}
+	}
+    kern_return_t machret = thread_set_state(thread, ARM_THREAD_STATE, (thread_state_t)&ThreadState, ARM_THREAD_STATE_COUNT);
+    CHECK_MACH("thread_set_state(thread)", machret);
+
+    machret = thread_set_state(thread, ARM_VFP_STATE, (thread_state_t)&FloatState, ARM_VFP_STATE_COUNT);
+    CHECK_MACH("thread_set_state(float)", machret);
+
+    machret = thread_set_state(thread, ARM_DEBUG_STATE, (thread_state_t)&DebugState, ARM_DEBUG_STATE_COUNT);
+    CHECK_MACH("thread_set_state(debug)", machret);
+}
+#else
+#error Platform not supported
+#endif
 
 /*++
 Function :
@@ -1496,6 +1559,7 @@ Parameters:
 Return value :
     PAL_ERROR
 --*/
+#if defined(_X86_) || defined(_AMD64_)
 PAL_ERROR
 InjectActivationInternal(CPalThread* pThread)
 {
@@ -1573,5 +1637,32 @@ InjectActivationInternal(CPalThread* pThread)
 
     return palError;
 }
+#elif defined(_ARM_)
+PAL_ERROR
+InjectActivationInternal(CPalThread* pThread)
+{
+    PAL_ERROR palError;
+
+    mach_port_t threadPort = pThread->GetMachPortSelf();
+    kern_return_t MachRet = thread_suspend(threadPort);
+    palError = (MachRet == KERN_SUCCESS) ? NO_ERROR : ERROR_GEN_FAILURE;
+
+    if (palError == NO_ERROR)
+    {
+		// TODO: Handle this case
+
+		MachRet = thread_resume(threadPort);
+		palError = (MachRet == ERROR_SUCCESS) ? NO_ERROR : ERROR_GEN_FAILURE;
+	}
+    else
+    {
+		printf("Suspension failed with error 0x%x\n", palError);
+	}
+
+    return palError;
+}
+#else
+#error Platform not supported
+#endif
 
 #endif // HAVE_MACH_EXCEPTIONS
