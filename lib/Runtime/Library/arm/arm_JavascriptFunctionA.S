@@ -21,7 +21,7 @@
         push_nonvol_reg {r11}
         push_nonvol_reg {lr}
 
-        bl      _ZN2Js18JavascriptFunction19DeferredDeserializeEPNS_14ScriptFunctionE
+        bl      C_FUNC(_ZN2Js18JavascriptFunction19DeferredDeserializeEPNS_14ScriptFunctionE)
         mov     r12,r0              // back up entryPoint in R12
 
         pop_nonvol_reg {lr}
@@ -38,7 +38,7 @@
 
 
         mov     r0, sp              // Pass the address of the function at the saved r0 in case it need to be boxed
-        bl      _ZN2Js18JavascriptFunction13DeferredParseEPPNS_14ScriptFunctionE
+        bl      C_FUNC(_ZN2Js18JavascriptFunction13DeferredParseEPPNS_14ScriptFunctionE)
         mov     r12,r0              // back up entryPoint in R12
 
         pop_nonvol_reg {lr}
