@@ -1021,9 +1021,13 @@ thread_act_t MachMessage::GetThreadFromState(thread_state_flavor_t eFlavor, thre
         targetSP = ((x86_thread_state64_t*)pState)->__rsp;
         break;
 #elif defined(_ARM_)
-    case ARM_THREAD_STATE:
-        targetSP = PSTATE_WRAP((arm_thread_state_t*)pState, sp);
+    case ARM_UNIFIED_THREAD_STATE:
+        targetSP = PSTATE_WRAP(&(((arm_unified_thread_state_t*)pState)->ts_32), sp);
 		break;
+#elif defined(_ARM64_)
+    case ARM_UNIFIED_THREAD_STATE:
+		targetSP = PSTATE_WRAP(&(((arm_unified_thread_state_t*)pState)->ts_64), sp);
+        break;
 #else
 #error Unexpected architecture.
 #endif
@@ -1042,10 +1046,10 @@ thread_act_t MachMessage::GetThreadFromState(thread_state_flavor_t eFlavor, thre
     for (mach_msg_type_number_t i = 0; i < cThreads; i++)
     {
         // Get the general register state of each thread.
-#if defined(_ARM_)
-		arm_thread_state_t threadState;
-		mach_msg_type_number_t count = ARM_THREAD_STATE_COUNT;
-		machret = thread_get_state(pThreads[i], ARM_THREAD_STATE, (thread_state_t)&threadState, &count);
+#if defined(_ARM_) || defined(_ARM64_)
+		arm_unified_thread_state_t threadState;
+		mach_msg_type_number_t count = ARM_UNIFIED_THREAD_STATE_COUNT;
+		machret = thread_get_state(pThreads[i], ARM_UNIFIED_THREAD_STATE, (thread_state_t)&threadState, &count);
 #else
         x86_thread_state_t threadState;
         mach_msg_type_number_t count = x86_THREAD_STATE_COUNT;
@@ -1062,7 +1066,9 @@ thread_act_t MachMessage::GetThreadFromState(thread_state_flavor_t eFlavor, thre
 #elif defined(_AMD64_)
             if (threadState.uts.ts64.__rsp == targetSP)
 #elif defined(_ARM_)
-			if (PSTATE_WRAP(&threadState, sp) == targetSP)
+            if (PSTATE_WRAP(&(threadState.ts_32), sp) == targetSP)
+#elif defined(_ARM64_)
+            if (PSTATE_WRAP(&(threadState.ts_64), sp) == targetSP)
 #else
 #error Unexpected architecture.
 #endif

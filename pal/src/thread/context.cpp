@@ -32,10 +32,6 @@ extern void CONTEXT_CaptureContext(LPCONTEXT lpContext);
 #error Unexpected architecture.
 #endif
 
-#ifndef CONTEXT_SEGMENTS
-#define CONTEXT_SEGMENTS 0
-#endif
-
 #if !HAVE_MACH_EXCEPTIONS
 
 #ifndef __GLIBC__
@@ -782,7 +778,13 @@ CONTEXT_GetThreadContextFromPort(
     mach_msg_type_number_t StateCount;
     thread_state_flavor_t StateFlavor;
 
+#if defined(_X86_) || defined(_AMD64_)
     if (lpContext->ContextFlags & (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS))
+#elif defined(_ARM_) || defined(_ARM64_)
+    if (lpContext->ContextFlags & (CONTEXT_CONTROL | CONTEXT_INTEGER))
+#else
+#error Unexpected architecture
+#endif
     {
 #ifdef _X86_
         x86_thread_state32_t State;
@@ -790,9 +792,9 @@ CONTEXT_GetThreadContextFromPort(
 #elif defined(_AMD64_)
         x86_thread_state64_t State;
         StateFlavor = x86_THREAD_STATE64;
-#elif defined(_ARM_)
-        arm_thread_state_t State;
-		StateFlavor = ARM_THREAD_STATE;
+#elif defined(_ARM_) || defined(_ARM64_)
+        arm_unified_thread_state_t State;
+        StateFlavor = ARM_UNIFIED_THREAD_STATE;
 #else
 #error Unexpected architecture.
 #endif
@@ -814,9 +816,9 @@ CONTEXT_GetThreadContextFromPort(
 #elif defined(_AMD64_)
         x86_float_state64_t State;
         StateFlavor = x86_FLOAT_STATE64;
-#elif defined(_ARM_)
-		arm_vfp_state_t State;
-		StateFlavor = ARM_VFP_STATE;
+#elif defined(_ARM_) || defined(_ARM64_)
+        arm_vfp_state_t State;
+        StateFlavor = ARM_VFP_STATE;
 #else
 #error Unexpected architecture.
 #endif
@@ -975,45 +977,70 @@ CONTEXT_GetThreadContextFromThreadState(
             }
             break;
 #elif defined(_ARM_)
-		case ARM_THREAD_STATE:
-			if (lpContext->ContextFlags & (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS))
-			{
-				arm_thread_state_t *pState = (arm_thread_state_t *)threadState;
-			
-				lpContext->R0 = PSTATE_WRAP(pState, r[0]);
-				lpContext->R1 = PSTATE_WRAP(pState, r[1]);
-				lpContext->R2 = PSTATE_WRAP(pState, r[2]);
-				lpContext->R3 = PSTATE_WRAP(pState, r[3]);
-				lpContext->R4 = PSTATE_WRAP(pState, r[4]);
-				lpContext->R5 = PSTATE_WRAP(pState, r[5]);
-				lpContext->R6 = PSTATE_WRAP(pState, r[6]);
-				lpContext->R7 = PSTATE_WRAP(pState, r[7]);
-				lpContext->R8 = PSTATE_WRAP(pState, r[8]);
-				lpContext->R9 = PSTATE_WRAP(pState, r[9]);
-				lpContext->R10 = PSTATE_WRAP(pState, r[10]);
-				lpContext->R11 = PSTATE_WRAP(pState, r[11]);
-				lpContext->R12 = PSTATE_WRAP(pState, r[12]);
-				lpContext->Sp = PSTATE_WRAP(pState, sp);
-				lpContext->Lr = PSTATE_WRAP(pState, lr);
-				lpContext->Pc = PSTATE_WRAP(pState, pc);
-				lpContext->Cpsr = PSTATE_WRAP(pState, cpsr);
-			}
-			break;
-			
-		case ARM_VFP_STATE:
-			if (lpContext->ContextFlags & CONTEXT_FLOATING_POINT)
-			{
-				// TODO: Do we need Neon?
-				arm_vfp_state_t *pState = (arm_vfp_state_t *)threadState;
-			
-				lpContext->Fpscr = PSTATE_WRAP(pState, fpscr);
-				memcpy(&lpContext->S[0], PSTATE_WRAP(pState, r), sizeof(PSTATE_WRAP(pState, r)));
-			}
-			break;
+        case ARM_UNIFIED_THREAD_STATE:
+            if (lpContext->ContextFlags & (CONTEXT_CONTROL | CONTEXT_INTEGER))
+            {
+                arm_unified_thread_state_t *pState = (arm_unified_thread_state_t *)threadState;
+            
+                lpContext->R0 = PSTATE_WRAP(&(pState->ts_32), r[0]);
+                lpContext->R1 = PSTATE_WRAP(&(pState->ts_32), r[1]);
+                lpContext->R2 = PSTATE_WRAP(&(pState->ts_32), r[2]);
+                lpContext->R3 = PSTATE_WRAP(&(pState->ts_32), r[3]);
+                lpContext->R4 = PSTATE_WRAP(&(pState->ts_32), r[4]);
+                lpContext->R5 = PSTATE_WRAP(&(pState->ts_32), r[5]);
+                lpContext->R6 = PSTATE_WRAP(&(pState->ts_32), r[6]);
+                lpContext->R7 = PSTATE_WRAP(&(pState->ts_32), r[7]);
+                lpContext->R8 = PSTATE_WRAP(&(pState->ts_32), r[8]);
+                lpContext->R9 = PSTATE_WRAP(&(pState->ts_32), r[9]);
+                lpContext->R10 = PSTATE_WRAP(&(pState->ts_32), r[10]);
+                lpContext->R11 = PSTATE_WRAP(&(pState->ts_32), r[11]);
+                lpContext->R12 = PSTATE_WRAP(&(pState->ts_32), r[12]);
+                lpContext->Sp = PSTATE_WRAP(&(pState->ts_32), sp);
+                lpContext->Lr = PSTATE_WRAP(&(pState->ts_32), lr);
+                lpContext->Pc = PSTATE_WRAP(&(pState->ts_32), pc);
+                lpContext->Cpsr = PSTATE_WRAP(&(pState->ts_32), cpsr);
+            }
+            break;
+
+        case ARM_VFP_STATE:
+            if (lpContext->ContextFlags & CONTEXT_FLOATING_POINT)
+            {
+                // TODO: Do we need Neon?
+                arm_vfp_state_t *pState = (arm_vfp_state_t *)threadState;
+
+                lpContext->Fpscr = PSTATE_WRAP(pState, fpscr);
+                memcpy(lpContext->S, PSTATE_WRAP(pState, r), sizeof(lpContext->S));
+            }
+            break;
+#elif defined(_ARM64_)
+        case ARM_UNIFIED_THREAD_STATE:
+            if (lpContext->ContextFlags & (CONTEXT_CONTROL | CONTEXT_INTEGER))
+            {
+                arm_unified_thread_state_t *pState = (arm_unified_thread_state_t *)threadState;
+
+                memcpy(lpContext->X, PSTATE_WRAP(&(pState->ts_64), x), sizeof(lpContext->X));
+                lpContext->Fp = PSTATE_WRAP(&(pState->ts_64), fp);
+                lpContext->Sp = PSTATE_WRAP(&(pState->ts_64), sp);
+                lpContext->Lr = PSTATE_WRAP(&(pState->ts_64), lr);
+                lpContext->Pc = PSTATE_WRAP(&(pState->ts_64), pc);
+                lpContext->Cpsr = PSTATE_WRAP(&(pState->ts_64), cpsr);
+            }
+            break;
+
+        case ARM_VFP_STATE:
+            if (lpContext->ContextFlags & CONTEXT_FLOATING_POINT)
+            {
+                // TODO: Do we need Neon?
+                arm_vfp_state_t *pState = (arm_vfp_state_t *)threadState;
+
+                lpContext->Fpscr = PSTATE_WRAP(pState, fpscr);
+                memcpy(&lpContext->S[0], PSTATE_WRAP(pState, r), sizeof(PSTATE_WRAP(pState, r)));
+            }
+            break;
 #else
 #error Unexpected architecture.
 #endif
-#if !defined(_ARM_)
+#if defined(_X86_) || defined(_AMD64_)
         case x86_THREAD_STATE:
         {
             x86_thread_state_t *pState = (x86_thread_state_t *)threadState;
@@ -1145,26 +1172,37 @@ CONTEXT_SetThreadContextOnPort(
         State.__fs = lpContext->SegFs;
         State.__gs = lpContext->SegGs;
 #elif defined(_ARM_)
-		arm_thread_state_t State;
-		StateFlavor = ARM_THREAD_STATE;
+        arm_unified_thread_state_t State;
+        StateFlavor = ARM_UNIFIED_THREAD_STATE;
 
-		PSTATE_WRAP(&State, r[0]) = lpContext->R0;
-		PSTATE_WRAP(&State, r[1]) = lpContext->R1;
-		PSTATE_WRAP(&State, r[2]) = lpContext->R2;
-		PSTATE_WRAP(&State, r[3]) = lpContext->R3;
-		PSTATE_WRAP(&State, r[4]) = lpContext->R4;
-		PSTATE_WRAP(&State, r[5]) = lpContext->R5;
-		PSTATE_WRAP(&State, r[6]) = lpContext->R6;
-		PSTATE_WRAP(&State, r[7]) = lpContext->R7;
-		PSTATE_WRAP(&State, r[8]) = lpContext->R8;
-		PSTATE_WRAP(&State, r[9]) = lpContext->R9;
-		PSTATE_WRAP(&State, r[10]) = lpContext->R10;
-		PSTATE_WRAP(&State, r[11]) = lpContext->R11;
-		PSTATE_WRAP(&State, r[12]) = lpContext->R12;
-		PSTATE_WRAP(&State, sp) = lpContext->Sp;
-		PSTATE_WRAP(&State, lr) = lpContext->Lr;
-		PSTATE_WRAP(&State, pc) = lpContext->Pc;
-		PSTATE_WRAP(&State, cpsr) = lpContext->Cpsr;
+        PSTATE_WRAP(&(State.ts_32), r[0]) = lpContext->R0;
+        PSTATE_WRAP(&(State.ts_32), r[1]) = lpContext->R1;
+        PSTATE_WRAP(&(State.ts_32), r[2]) = lpContext->R2;
+        PSTATE_WRAP(&(State.ts_32), r[3]) = lpContext->R3;
+        PSTATE_WRAP(&(State.ts_32), r[4]) = lpContext->R4;
+        PSTATE_WRAP(&(State.ts_32), r[5]) = lpContext->R5;
+        PSTATE_WRAP(&(State.ts_32), r[6]) = lpContext->R6;
+        PSTATE_WRAP(&(State.ts_32), r[7]) = lpContext->R7;
+        PSTATE_WRAP(&(State.ts_32), r[8]) = lpContext->R8;
+        PSTATE_WRAP(&(State.ts_32), r[9]) = lpContext->R9;
+        PSTATE_WRAP(&(State.ts_32), r[10]) = lpContext->R10;
+        PSTATE_WRAP(&(State.ts_32), r[11]) = lpContext->R11;
+        PSTATE_WRAP(&(State.ts_32), r[12]) = lpContext->R12;
+        PSTATE_WRAP(&(State.ts_32), sp) = lpContext->Sp;
+        PSTATE_WRAP(&(State.ts_32), lr) = lpContext->Lr;
+        PSTATE_WRAP(&(State.ts_32), pc) = lpContext->Pc;
+        PSTATE_WRAP(&(State.ts_32), cpsr) = lpContext->Cpsr;
+#elif defined(_ARM64_)
+        arm_unified_thread_state_t State;
+        StateFlavor = ARM_UNIFIED_THREAD_STATE;
+
+        static_assert(sizeof(lpContext->X) == sizeof(PSTATE_WRAP(&(State.ts_64), x)), "Non-matching register sizes of ARM64 registers!");
+        memcpy(PSTATE_WRAP(&(State.ts_64), x), lpContext->X, sizeof(lpContext->X));
+        PSTATE_WRAP(&(State.ts_64), fp) = lpContext->Fp;
+        PSTATE_WRAP(&(State.ts_64), sp) = lpContext->Sp;
+        PSTATE_WRAP(&(State.ts_64), lr) = lpContext->Lr;
+        PSTATE_WRAP(&(State.ts_64), pc) = lpContext->Pc;
+        PSTATE_WRAP(&(State.ts_64), cpsr) = lpContext->Cpsr;
 #else
 #error Unexpected architecture.
 #endif
@@ -1191,9 +1229,9 @@ CONTEXT_SetThreadContextOnPort(
 #elif defined(_AMD64_)
         x86_float_state64_t State;
         StateFlavor = x86_FLOAT_STATE64;
-#elif defined(_ARM_)
-		arm_vfp_state_t State;
-		StateFlavor = ARM_VFP_STATE;
+#elif defined(_ARM_) || defined(_ARM64_)
+        arm_vfp_state_t State;
+        StateFlavor = ARM_VFP_STATE;
 #else
 #error Unexpected architecture.
 #endif
@@ -1257,9 +1295,9 @@ CONTEXT_SetThreadContextOnPort(
                 memcpy((&State.__fpu_stmm0)[i].__mmst_reg, &lpContext->FltSave.FloatRegisters[i], 10);
 
             memcpy(&State.__fpu_xmm0, &lpContext->Xmm0, 8 * 16);
-#elif defined(_ARM_)
-			PSTATE_WRAP(&State, fpscr) = lpContext->Fpscr;
-			memcpy(PSTATE_WRAP(&State, r), &lpContext->S[0], sizeof(PSTATE_WRAP(&State, r)));
+#elif defined(_ARM_) || defined(_ARM64_)
+            PSTATE_WRAP(&State, fpscr) = lpContext->Fpscr;
+            memcpy(PSTATE_WRAP(&State, r), lpContext->S, sizeof(lpContext->S));
 #else
 #error Unexpected architecture.
 #endif

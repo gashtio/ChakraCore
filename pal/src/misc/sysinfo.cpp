@@ -68,7 +68,7 @@ Revision History:
 #undef OLD_DEBUG
 #endif
 #else
-#if (_ARM_)
+#if defined(_ARM_) || defined(_ARM64_)
 #include <mach/arm/vm_param.h>
 #endif
 #endif

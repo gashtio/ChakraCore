@@ -13,7 +13,11 @@ include(CheckLibraryExists)
 
 if (CC_TARGET_OS_IOS)
   set(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk")
-  set(CMAKE_OSX_ARCHITECTURES "armv7")
+  if (CC_TARGETS_ARM)
+    set(CMAKE_OSX_ARCHITECTURES "armv7")
+  elseif (CC_TARGETS_ARM64)
+    set(CMAKE_OSX_ARCHITECTURES "arm64")
+  endif()
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)

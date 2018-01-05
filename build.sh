@@ -35,7 +35,7 @@ PRINT_USAGE() {
     echo "build.sh [options]"
     echo ""
     echo "options:"
-    echo "     --arch[=S]        Set target arch (arm, x86, amd64)"
+    echo "     --arch[=S]        Set target arch (arm, arm64, x86, amd64)"
     echo "     --cc=PATH         Path to Clang   (see example below)"
     echo "     --cxx=PATH        Path to Clang++ (see example below)"
     echo "     --create-deb[=V]  Create .deb package with given V version."
@@ -608,6 +608,9 @@ pushd $BUILD_DIRECTORY > /dev/null
 if [[ $ARCH =~ "x86" ]]; then
     ARCH="-DCC_TARGETS_X86_SH=1"
     echo "Compile Target : x86"
+elif [[ $ARCH =~ "arm64" ]]; then
+    ARCH="-DCC_TARGETS_ARM64_SH=1"
+    echo "Compile Target : arm64"
 elif [[ $ARCH =~ "arm" ]]; then
     ARCH="-DCC_TARGETS_ARM_SH=1"
     echo "Compile Target : arm"
