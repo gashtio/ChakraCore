@@ -83,9 +83,15 @@ struct MachExceptionInfo
     exception_type_t ExceptionType;
     mach_msg_type_number_t SubcodeCount;
     MACH_EH_TYPE(exception_data_type_t) Subcodes[2];
+#if defined(_ARM_)
+	arm_thread_state_t ThreadState;
+	arm_vfp_state_t FloatState;
+	arm_debug_state_t DebugState;
+#else
     x86_thread_state_t ThreadState;
     x86_float_state_t FloatState;
     x86_debug_state_t DebugState;
+#endif
 
     MachExceptionInfo(mach_port_t thread, MachMessage& message);
     void RestoreState(mach_port_t thread);

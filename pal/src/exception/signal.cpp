@@ -174,6 +174,10 @@ Parameters :
 
     (no return value)
 --*/
+#define intptr_t FAKERENAME_OF_DARWIN_TYPE
+typedef int intptr_t;
+intptr_t ttt = 42;
+
 static void sigill_handler(int code, siginfo_t *siginfo, void *context)
 {
     if (PALIsInitialized())

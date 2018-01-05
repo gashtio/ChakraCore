@@ -6,12 +6,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if defined(__IOS__)
+// Unfortunately LLVM doesn't support emitting correct DWARF information
+// on non-ELF targets, so comment out all unsupported directives on iOS
+#define DIRECTIVE @
+#else
+#define DIRECTIVE
+#endif
+
 .macro LEAF_ENTRY Name, Section
         .thumb_func
         .global C_FUNC(\Name)
-        .type \Name, %function
+        DIRECTIVE .type \Name, %function
 C_FUNC(\Name):
-        .fnstart
+        DIRECTIVE .fnstart
 .endm
 
 .macro NESTED_ENTRY Name, Section, Handler
@@ -36,8 +44,8 @@ C_FUNC(\Name):
 .endm
 
 .macro LEAF_END Name, Section
-        .size \Name, .-\Name
-        .fnend
+        DIRECTIVE .size \Name, .-\Name
+        DIRECTIVE .fnend
 .endm
 
 .macro LEAF_END_MARKED Name, Section

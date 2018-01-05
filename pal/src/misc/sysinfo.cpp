@@ -53,6 +53,7 @@ Revision History:
 #include <mach/mach_host.h>
 #endif // defined(__APPLE__)
 
+#if !defined(__IOS__)
 // On some platforms sys/user.h ends up defining _DEBUG; if so
 // remove the definition before including the header and put
 // back our definition afterwards
@@ -65,6 +66,11 @@ Revision History:
 #undef _DEBUG
 #define _DEBUG OLD_DEBUG
 #undef OLD_DEBUG
+#endif
+#else
+#if (_ARM_)
+#include <mach/arm/vm_param.h>
+#endif
 #endif
 
 #include "pal/dbgmsg.h"
@@ -193,6 +199,8 @@ GetCurrentThreadStackLimits(&lowl, &highl);
 #endif // USRSTACK64
 #elif defined(USRSTACK)
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) PAL_MAX(highl, USRSTACK);
+#elif defined(VM_MAP_MAX_ADDRESS)
+    lpSystemInfo->lpMaximumApplicationAddress = (PVOID) PAL_MAX(highl, VM_MAP_MAX_ADDRESS);
 #else
 #error The maximum application address is not known on this platform.
 #endif

@@ -21,6 +21,12 @@ Abstract:
 #include "pal/thread.hpp"
 #include "machmessage.h"
 
+#ifdef __DARWIN_UNIX03
+#define PSTATE_WRAP(a,b) (a)->__##b
+#else
+#define PSTATE_WRAP(a,b) (a)->b
+#endif
+
 #if HAVE_MACH_EXCEPTIONS
 
 // Construct an empty message. Use Receive() to form a message that can be inspected or SendSetThread(),
@@ -1014,6 +1020,10 @@ thread_act_t MachMessage::GetThreadFromState(thread_state_flavor_t eFlavor, thre
     case x86_THREAD_STATE64:
         targetSP = ((x86_thread_state64_t*)pState)->__rsp;
         break;
+#elif defined(_ARM_)
+    case ARM_THREAD_STATE:
+        targetSP = PSTATE_WRAP((arm_thread_state_t*)pState, sp);
+		break;
 #else
 #error Unexpected architecture.
 #endif
@@ -1032,9 +1042,15 @@ thread_act_t MachMessage::GetThreadFromState(thread_state_flavor_t eFlavor, thre
     for (mach_msg_type_number_t i = 0; i < cThreads; i++)
     {
         // Get the general register state of each thread.
+#if defined(_ARM_)
+		arm_thread_state_t threadState;
+		mach_msg_type_number_t count = ARM_THREAD_STATE_COUNT;
+		machret = thread_get_state(pThreads[i], ARM_THREAD_STATE, (thread_state_t)&threadState, &count);
+#else
         x86_thread_state_t threadState;
         mach_msg_type_number_t count = x86_THREAD_STATE_COUNT;
         machret = thread_get_state(pThreads[i], x86_THREAD_STATE, (thread_state_t)&threadState, &count);
+#endif
         if (machret == KERN_SUCCESS)
         {
             // If a thread has the same SP as our target it should be the same thread (otherwise we have two
@@ -1045,6 +1061,8 @@ thread_act_t MachMessage::GetThreadFromState(thread_state_flavor_t eFlavor, thre
             if (threadState.uts.ts32.esp == targetSP)
 #elif defined(_AMD64_)
             if (threadState.uts.ts64.__rsp == targetSP)
+#elif defined(_ARM_)
+			if (PSTATE_WRAP(&threadState, sp) == targetSP)
 #else
 #error Unexpected architecture.
 #endif

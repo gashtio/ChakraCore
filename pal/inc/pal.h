@@ -3186,6 +3186,9 @@ PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context,
 #define PAL_CS_NATIVE_DATA_SIZE 76
 #elif defined(__APPLE__) && defined(__x86_64__)
 #define PAL_CS_NATIVE_DATA_SIZE 120
+#elif defined(__APPLE__) && defined(__IOS__) && defined(_ARM_)
+// Assume the same size as on OSX 64bit, although this doesn't seem to be used anywhere
+#define PAL_CS_NATIVE_DATA_SIZE 120
 #elif defined(__LINUX__) && defined(__i386__)
 #define PAL_CS_NATIVE_DATA_SIZE 56
 #elif defined(__LINUX__) && defined(__x86_64__)

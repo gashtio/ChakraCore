@@ -87,12 +87,12 @@ STDAPI_(BSTR) SysAllocStringLen(const OLECHAR *psz, UINT len)
 {
 
     BSTR bstr;
-    DWORD cbTotal = 0;
+    ULONG cbTotal = 0;
 
     if (FAILED(CbSysStringSize(len, FALSE, &cbTotal)))
         return NULL;
 
-    bstr = (OLECHAR *)HeapAlloc(GetProcessHeap(), 0, cbTotal);
+    bstr = (OLECHAR *)HeapAlloc(GetProcessHeap(), 0, DWORD(cbTotal));
 
     if(bstr != NULL) {
 

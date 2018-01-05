@@ -2173,7 +2173,7 @@ FlushProcessWriteBuffers()
 
     // Ensure that the page is dirty before we change the protection so that
     // we prevent the OS from skipping the global TLB flush.
-    InterlockedIncrement(s_helperPage);
+    InterlockedIncrement((LONG* volatile)s_helperPage);
 
     status = mprotect(s_helperPage, VIRTUAL_PAGE_SIZE, PROT_NONE);
     FATAL_ASSERT(status == 0, "Failed to change helper page protection to no access");

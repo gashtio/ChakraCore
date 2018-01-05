@@ -200,7 +200,7 @@ typedef long double LONG_DOUBLE;
 
 typedef void VOID;
 
-#ifndef PLATFORM_UNIX
+#if !defined(PLATFORM_UNIX) || defined(__IOS__)
 typedef long LONG;
 typedef unsigned long ULONG;
 #else
@@ -477,9 +477,15 @@ UShortToPtr(
 typedef _W64 __int32 INT_PTR;
 typedef _W64 unsigned __int32 UINT_PTR;
 
+#if !defined(__IOS__)
 typedef _W64 __int32 LONG_PTR;
 typedef _W64 unsigned __int32 ULONG_PTR, *PULONG_PTR;
 typedef _W64 unsigned __int32 DWORD_PTR, *PDWORD_PTR;
+#else
+typedef _W64 long LONG_PTR;
+typedef _W64 unsigned long ULONG_PTR, *PULONG_PTR;
+typedef _W64 unsigned long DWORD_PTR, *PDWORD_PTR;
+#endif
 
 /* maximum signed 32 bit value */
 #define LONG_PTR_MAX      2147483647L
@@ -535,7 +541,11 @@ typedef LONG_PTR SSIZE_T, *PSSIZE_T;
 typedef unsigned long size_t;
 typedef long ptrdiff_t;
 #else // !BIT64
+#if !defined(__IOS__)
 typedef unsigned int size_t;
+#else
+typedef unsigned long size_t;
+#endif
 typedef int ptrdiff_t;
 #endif // !BIT64
 #else
@@ -583,7 +593,7 @@ typedef unsigned long int uintptr_t;
 typedef int intptr_t;
 typedef unsigned int uintptr_t;
 #endif // !BIT64
-#else
+#elif !defined(__IOS__)
 typedef INT_PTR intptr_t;
 typedef UINT_PTR uintptr_t;
 #endif

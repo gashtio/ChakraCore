@@ -296,6 +296,8 @@ while [[ $# -gt 0 ]]; do
             # inherit CXX and CC
             _CXX="${CXX}"
             _CC="${CC}"
+        elif [[ $_TARGET_OS =~ "ios" ]]; then
+            TARGET_OS="-DCC_TARGET_OS_IOS_SH=1"
         fi
         ;;
 

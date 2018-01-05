@@ -48,7 +48,9 @@ Revision History:
 #elif HAVE_TTRACE // HAVE_PROCFS_CTL
 #include <sys/ttrace.h>
 #else // HAVE_TTRACE
+#ifndef __IOS__
 #include <sys/ptrace.h>
+#endif
 #endif  // HAVE_PROCFS_CTL
 #if HAVE_VM_READ
 #include <mach/mach.h>

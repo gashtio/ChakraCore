@@ -30,6 +30,20 @@
     #define _NOINLINE __declspec(noinline)
 #endif
 
+// Check if building for iOS.
+#if defined(__APPLE__)
+#ifndef __IOS__
+#include "TargetConditionals.h"
+#if TARGET_IPHONE_SIMULATOR
+#define __IOS__
+#elif TARGET_OS_IPHONE
+#define __IOS__
+#elif TARGET_OS_MAC
+// macOS
+#endif
+#endif // __IOS__ ?
+#endif // __APPLE__ ?
+
 // Only VC compiler support overflow guard
 #if defined(__GNUC__) || defined(__clang__)
 #define DECLSPEC_GUARD_OVERFLOW
@@ -175,6 +189,7 @@ inline void DebugBreak()
 #define _bittest BitTest
 #define _bittestandset BitTestAndSet
 #define _interlockedbittestandset InterlockedBitTestAndSet
+#define _interlockedbittestandreset InterlockedBitTestAndReset
 
 #define DbgRaiseAssertionFailure() __builtin_trap()
 
