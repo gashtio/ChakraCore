@@ -10,6 +10,8 @@
 #error Include arm64.h in builds of ARM64 targets only.
 #endif
 
+extern "C" unsigned __int64 __getReg(int);
+#pragma intrinsic(__getReg)
 #define arm64_GET_CURRENT_FRAME() ((LPVOID)__getReg(29))
 extern "C" VOID arm64_SAVE_REGISTERS(void*);
 

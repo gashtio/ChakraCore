@@ -67,10 +67,6 @@ Revision History:
 #define _DEBUG OLD_DEBUG
 #undef OLD_DEBUG
 #endif
-#else
-#if defined(_ARM_) || defined(_ARM64_)
-#include <mach/arm/vm_param.h>
-#endif
 #endif
 
 #include "pal/dbgmsg.h"
@@ -194,6 +190,8 @@ GetCurrentThreadStackLimits(&lowl, &highl);
 #elif defined(_WIN64)
 #if defined(USRSTACK64)
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) PAL_MAX(highl, USRSTACK64);
+#elif defined(VM_MAP_MAX_ADDRESS)
+    lpSystemInfo->lpMaximumApplicationAddress = (PVOID) PAL_MAX(highl, VM_MAP_MAX_ADDRESS);
 #else // !USRSTACK64
 #error How come USRSTACK64 is not defined for 64bit?
 #endif // USRSTACK64

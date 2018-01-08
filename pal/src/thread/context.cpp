@@ -816,9 +816,12 @@ CONTEXT_GetThreadContextFromPort(
 #elif defined(_AMD64_)
         x86_float_state64_t State;
         StateFlavor = x86_FLOAT_STATE64;
-#elif defined(_ARM_) || defined(_ARM64_)
+#elif defined(_ARM_)
         arm_vfp_state_t State;
         StateFlavor = ARM_VFP_STATE;
+#elif defined(_ARM64_)
+        arm_neon_state64_t State;
+        StateFlavor = ARM_NEON_STATE64;
 #else
 #error Unexpected architecture.
 #endif
@@ -1027,14 +1030,14 @@ CONTEXT_GetThreadContextFromThreadState(
             }
             break;
 
-        case ARM_VFP_STATE:
+        case ARM_NEON_STATE64:
             if (lpContext->ContextFlags & CONTEXT_FLOATING_POINT)
             {
-                // TODO: Do we need Neon?
-                arm_vfp_state_t *pState = (arm_vfp_state_t *)threadState;
+                arm_neon_state64_t *pState = (arm_neon_state64_t *)threadState;
 
-                lpContext->Fpscr = PSTATE_WRAP(pState, fpscr);
-                memcpy(&lpContext->S[0], PSTATE_WRAP(pState, r), sizeof(PSTATE_WRAP(pState, r)));
+                lpContext->Fpsr = PSTATE_WRAP(pState, fpsr);
+                lpContext->Fpcr = PSTATE_WRAP(pState, fpcr);
+                memcpy(&lpContext->V[0], PSTATE_WRAP(pState, v), sizeof(PSTATE_WRAP(pState, v)));
             }
             break;
 #else
@@ -1229,9 +1232,12 @@ CONTEXT_SetThreadContextOnPort(
 #elif defined(_AMD64_)
         x86_float_state64_t State;
         StateFlavor = x86_FLOAT_STATE64;
-#elif defined(_ARM_) || defined(_ARM64_)
+#elif defined(_ARM_)
         arm_vfp_state_t State;
         StateFlavor = ARM_VFP_STATE;
+#elif defined(_ARM64_)
+        arm_neon_state64_t State;
+        StateFlavor = ARM_NEON_STATE64;
 #else
 #error Unexpected architecture.
 #endif
@@ -1295,9 +1301,13 @@ CONTEXT_SetThreadContextOnPort(
                 memcpy((&State.__fpu_stmm0)[i].__mmst_reg, &lpContext->FltSave.FloatRegisters[i], 10);
 
             memcpy(&State.__fpu_xmm0, &lpContext->Xmm0, 8 * 16);
-#elif defined(_ARM_) || defined(_ARM64_)
+#elif defined(_ARM_)
             PSTATE_WRAP(&State, fpscr) = lpContext->Fpscr;
             memcpy(PSTATE_WRAP(&State, r), lpContext->S, sizeof(lpContext->S));
+#elif defined(_ARM64_)
+            PSTATE_WRAP(&State, fpsr) = lpContext->Fpsr;
+            PSTATE_WRAP(&State, fpcr) = lpContext->Fpcr;
+            memcpy(PSTATE_WRAP(&State, v), lpContext->V, sizeof(lpContext->V));
 #else
 #error Unexpected architecture.
 #endif

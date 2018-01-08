@@ -6875,6 +6875,8 @@ ULONG_PTR __stdcall GetCurrentSP();
 #if defined(_ARM_)
 #define _ARM_BARRIER_SY 0xF
 #define _InstructionSynchronizationBarrier() __isb(_ARM_BARRIER_SY)
+#elif defined(_ARM64_)
+#define _InstructionSynchronizationBarrier() __asm__ volatile("isb" ::: "memory")
 #endif
 
 #ifndef MAXUINT16

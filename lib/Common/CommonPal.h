@@ -385,7 +385,7 @@ typedef union _SLIST_HEADER {
   } DUMMYSTRUCTNAME;
 } SLIST_HEADER, *PSLIST_HEADER;
 
-#elif defined(_ARM_)
+#elif defined(_ARM_) || defined(_ARM64_)
 
 typedef union _SLIST_HEADER {
   ULONGLONG Alignment;
@@ -676,7 +676,7 @@ namespace PlatformAgnostic
 {
     __forceinline unsigned char _BitTestAndSet(LONG *_BitBase, int _BitPos)
     {
-#if defined(__clang__) && !defined(_ARM_)
+#if defined(__clang__) && !defined(_ARM_) && !defined(_ARM64_)
         // Clang doesn't expand _bittestandset intrinic to bts, and it's implemention also doesn't work for _BitPos >= 32
         unsigned char retval = 0;
         asm(
@@ -694,7 +694,7 @@ namespace PlatformAgnostic
 
     __forceinline unsigned char _BitTest(LONG *_BitBase, int _BitPos)
     {
-#if defined(__clang__) && !defined(_ARM_)
+#if defined(__clang__) && !defined(_ARM_) && !defined(_ARM64_)
         // Clang doesn't expand _bittest intrinic to bt, and it's implemention also doesn't work for _BitPos >= 32
         unsigned char retval;
         asm(
@@ -712,7 +712,7 @@ namespace PlatformAgnostic
 
     __forceinline unsigned char _InterlockedBitTestAndSet(volatile LONG *_BitBase, int _BitPos)
     {
-#if defined(__clang__) && !defined(_ARM_)
+#if defined(__clang__) && !defined(_ARM_) && !defined(_ARM64_)
         // Clang doesn't expand _interlockedbittestandset intrinic to lock bts, and it's implemention also doesn't work for _BitPos >= 32
         unsigned char retval;
         asm(
@@ -730,7 +730,7 @@ namespace PlatformAgnostic
 
     __forceinline unsigned char _InterlockedBitTestAndReset(volatile LONG *_BitBase, int _BitPos)
     {
-#if defined(__clang__) && !defined(_ARM_)
+#if defined(__clang__) && !defined(_ARM_) && !defined(_ARM64_)
         // Clang doesn't expand _interlockedbittestandset intrinic to lock btr, and it's implemention also doesn't work for _BitPos >= 32
         unsigned char retval;
         asm(
