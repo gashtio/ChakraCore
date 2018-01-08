@@ -65,6 +65,13 @@ enum VIRTUAL_CONSTANTS
     /* Page manipulation constants. */
 #ifdef __sparc__
     VIRTUAL_PAGE_SIZE       = 0x2000,
+#elif defined(__IOS__) && (defined(_ARM_) || defined(_ARM64_))
+    // Ideally, this should be the global vm_page_size variable from
+    // mach/vm_page_size.h, but VIRTUAL_PAGE_SIZE is used as a literal so it
+    // has to be a number. Page size on 64bit ARM iOS should be 16K, otherwise
+    // 4K.
+    // TODO: How can we determine if it's 4 or 16K? Is it HW/OS specific?
+    VIRTUAL_PAGE_SIZE       = 0x4000,
 #else   // __sparc__
     VIRTUAL_PAGE_SIZE       = 0x1000,
 #endif  // __sparc__

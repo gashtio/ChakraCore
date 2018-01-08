@@ -62,7 +62,11 @@ public:
 #ifdef _WIN32
     static HMODULE GetCRTHandle();
 #endif
+#if defined(_M_ARM32_OR_ARM64) && defined(__IOS__)
+    static DWORD const PageSize = 16384;
+#else // __IOS__
     static DWORD const PageSize = 4096;
+#endif // __IOS__
 
 #ifdef STACK_ALIGN
     static DWORD const StackAlign = STACK_ALIGN;
@@ -131,9 +135,14 @@ public:
     static bool IsLowMemoryDevice();
 };
 
-
+#if defined(_M_ARM32_OR_ARM64) && defined(__IOS__)
+CompileAssert(AutoSystemInfo::PageSize == 16384);
+#define __in_ecount_pagesize __in_ecount(16384)
+#define __in_ecount_twopagesize __in_ecount(32768)
+#else
 // For Prefast where it doesn't like symbolic constants
 CompileAssert(AutoSystemInfo::PageSize == 4096);
 #define __in_ecount_pagesize __in_ecount(4096)
 #define __in_ecount_twopagesize __in_ecount(8192)
+#endif
 
