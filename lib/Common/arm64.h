@@ -10,9 +10,13 @@
 #error Include arm64.h in builds of ARM64 targets only.
 #endif
 
+#if defined(__ANDROID__) || defined(__IOS__)
+extern "C" LPVOID arm64_GET_CURRENT_FRAME();
+#else
 extern "C" unsigned __int64 __getReg(int);
 #pragma intrinsic(__getReg)
 #define arm64_GET_CURRENT_FRAME() ((LPVOID)__getReg(29))
+#endif
 extern "C" VOID arm64_SAVE_REGISTERS(void*);
 
 /*

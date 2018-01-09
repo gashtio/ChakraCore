@@ -2,6 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if defined(__IOS__)
+// Unfortunately LLVM doesn't support emitting correct DWARF information
+// on non-ELF targets, so comment out all unsupported directives on iOS
+#define DIRECTIVE ;
+#else
+#define DIRECTIVE
+#endif
+
 .macro NESTED_ENTRY Name, Section, Handler
         LEAF_ENTRY \Name, \Section
         .ifnc \Handler, NoHandler
@@ -19,14 +27,15 @@ C_FUNC(\Name):
 .endm
 
 .macro LEAF_ENTRY Name, Section
+        .align 4
         .global C_FUNC(\Name)
-        .type \Name, %function
+        DIRECTIVE .type \Name, %function
 C_FUNC(\Name):
         .cfi_startproc
 .endm
 
 .macro LEAF_END Name, Section
-        .size \Name, .-\Name
+        DIRECTIVE .size \Name, .-\Name
         .cfi_endproc
 .endm
 
@@ -60,8 +69,8 @@ C_FUNC(\Name\()_End):
         .cfi_rel_offset \reg, \ofs
 .endm
 
-.macro PROLOG_SAVE_REG_PAIR reg1, reg2, ofs
-        stp \reg1, \reg2, [sp, \ofs]
+.macro PROLOG_SAVE_REG_PAIR_REG_WRITEBACK reg1, reg2, ofs
+        stp \reg1, \reg2, [sp, #\ofs]!
         .cfi_rel_offset \reg1, \ofs
         .cfi_rel_offset \reg2, \ofs + 8
         .ifc \reg1, fp
@@ -86,8 +95,8 @@ C_FUNC(\Name\()_End):
         .cfi_restore \reg1
 .endm
 
-.macro EPILOG_RESTORE_REG_PAIR reg1, reg2, ofs
-        ldp \reg1, \reg2, [sp, \ofs]
+.macro EPILOG_RESTORE_REG_PAIR_REG_WRITEBACK reg1, reg2, ofs
+        ldp \reg1, \reg2, [sp, #\ofs]!
         .cfi_restore \reg1
         .cfi_restore \reg2
 .endm
