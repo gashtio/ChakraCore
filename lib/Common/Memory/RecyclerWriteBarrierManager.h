@@ -211,10 +211,17 @@ public:
     static DWORD GetWriteBarrier(void * address);
 #endif
 
+#if !defined(__IOS__)
     static size_t const s_WriteBarrierPageSize = 4096;
     static uint const s_BitArrayCardTableShift = 7;
     static uint const s_BytesPerCardBit = 1 << s_BitArrayCardTableShift;  // 128 = 1 << 7
     static uint const s_BytesPerCard = s_BytesPerCardBit * 32;      // 4K  = 1 << 12 = 128 << 5
+#else
+    static size_t const s_WriteBarrierPageSize = 16384;
+    static uint const s_BitArrayCardTableShift = 7;
+    static uint const s_BytesPerCardBit = 1 << s_BitArrayCardTableShift;  // 128 = 1 << 7
+    static uint const s_BytesPerCard = s_BytesPerCardBit * 128;      // 16K  = 1 << 16 = 128 << 9
+#endif
 
 private:
 

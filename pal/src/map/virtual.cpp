@@ -969,8 +969,13 @@ static LPVOID ReserveVirtualMemory(
 
 #if HAVE_VM_ALLOCATE
     // Allocate with vm_allocate first, then map at the fixed address.
+#if !defined(__IOS__) || 1
     result = vm_allocate(mach_task_self(), &StartBoundary, MemSize,
                           ((LPVOID) StartBoundary != NULL) ? FALSE : TRUE);
+#else
+	int vmAllocFlags = ((LPVOID) StartBoundary != NULL) ? VM_FLAGS_FIXED|VM_FLAGS_OVERWRITE : VM_FLAGS_ANYWHERE;
+    result = vm_allocate(mach_task_self(), &StartBoundary, MemSize, vmAllocFlags);
+#endif
     if (result != KERN_SUCCESS) {
         ERROR("vm_allocate failed to allocated the requested region!\n");
         pthrCurrent->SetLastError(ERROR_INVALID_ADDRESS);
