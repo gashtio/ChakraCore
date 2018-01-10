@@ -1344,11 +1344,65 @@ dbl_align:
             varResult = CALL_ENTRYPOINT(function->GetScriptContext()->GetThreadContext(),
                 entryPoint, (JavascriptFunction*)function, args.Info, args.Values[0]);
         }
+#if !defined(__ANDROID__) && !defined(__IOS__)
         else
         {
             varResult = JS_REENTRANCY_CHECK(function->GetScriptContext()->GetThreadContext(),
                 arm_CallFunction((JavascriptFunction*)function, args.Info, argCount, args.Values, entryPoint));
         }
+#else
+		else if (argCount == 2)
+		{
+			varResult = CALL_ENTRYPOINT(function->GetScriptContext()->GetThreadContext(),
+										entryPoint, (JavascriptFunction*)function, args.Info,
+										args.Values[0], args.Values[1]);
+		}
+		else if (argCount == 3)
+		{
+			varResult = CALL_ENTRYPOINT(function->GetScriptContext()->GetThreadContext(),
+										entryPoint, (JavascriptFunction*)function, args.Info,
+										args.Values[0], args.Values[1], args.Values[2]);
+		}
+		else if (argCount == 4)
+		{
+			varResult = CALL_ENTRYPOINT(function->GetScriptContext()->GetThreadContext(),
+										entryPoint, (JavascriptFunction*)function, args.Info,
+										args.Values[0], args.Values[1], args.Values[2], args.Values[3]);
+		}
+		else if (argCount == 5)
+		{
+			varResult = CALL_ENTRYPOINT(function->GetScriptContext()->GetThreadContext(),
+										entryPoint, (JavascriptFunction*)function, args.Info,
+										args.Values[0], args.Values[1], args.Values[2], args.Values[3], args.Values[4]);
+		}
+		else if (argCount == 6)
+		{
+			varResult = CALL_ENTRYPOINT(function->GetScriptContext()->GetThreadContext(),
+										entryPoint, (JavascriptFunction*)function, args.Info,
+										args.Values[0], args.Values[1], args.Values[2], args.Values[3], args.Values[4],
+										args.Values[5]);
+		}
+		else if (argCount == 7)
+		{
+			varResult = CALL_ENTRYPOINT(function->GetScriptContext()->GetThreadContext(),
+										entryPoint, (JavascriptFunction*)function, args.Info,
+										args.Values[0], args.Values[1], args.Values[2], args.Values[3], args.Values[4],
+										args.Values[5], args.Values[6]);
+		}
+		else if (argCount == 8)
+		{
+			varResult = CALL_ENTRYPOINT(function->GetScriptContext()->GetThreadContext(),
+										entryPoint, (JavascriptFunction*)function, args.Info,
+										args.Values[0], args.Values[1], args.Values[2], args.Values[3], args.Values[4],
+										args.Values[5], args.Values[6], args.Values[7]);
+		}
+		else
+		{
+			ScriptContext* scriptContext = function->GetScriptContext();
+			varResult = scriptContext->GetLibrary()->GetUndefined();
+			AssertMsg(false, "CallFunction call with unsupported number of arguments");
+		}
+#endif
 
         return varResult;
     }
@@ -1374,8 +1428,72 @@ dbl_align:
 #endif
         Js::Var varResult;
 
-        varResult = JS_REENTRANCY_CHECK(function->GetScriptContext()->GetThreadContext(),
-            arm64_CallFunction((JavascriptFunction*)function, args.Info, argCount, args.Values, entryPoint));
+#if !defined(__ANDROID__) && !defined(__IOS__)
+		varResult = JS_REENTRANCY_CHECK(function->GetScriptContext()->GetThreadContext(),
+										arm64_CallFunction((JavascriptFunction*)function, args.Info, argCount, args.Values, entryPoint));
+#else
+		if (argCount == 0)
+		{
+			varResult = CALL_ENTRYPOINT(function->GetScriptContext()->GetThreadContext(),
+										entryPoint, (JavascriptFunction*)function, args.Info);
+		}
+		else if (argCount == 1)
+		{
+			varResult = CALL_ENTRYPOINT(function->GetScriptContext()->GetThreadContext(),
+										entryPoint, (JavascriptFunction*)function, args.Info, args.Values[0]);
+		}
+		else if (argCount == 2)
+		{
+			varResult = CALL_ENTRYPOINT(function->GetScriptContext()->GetThreadContext(),
+										entryPoint, (JavascriptFunction*)function, args.Info,
+										args.Values[0], args.Values[1]);
+		}
+		else if (argCount == 3)
+		{
+			varResult = CALL_ENTRYPOINT(function->GetScriptContext()->GetThreadContext(),
+										entryPoint, (JavascriptFunction*)function, args.Info,
+										args.Values[0], args.Values[1], args.Values[2]);
+		}
+		else if (argCount == 4)
+		{
+			varResult = CALL_ENTRYPOINT(function->GetScriptContext()->GetThreadContext(),
+										entryPoint, (JavascriptFunction*)function, args.Info,
+										args.Values[0], args.Values[1], args.Values[2], args.Values[3]);
+		}
+		else if (argCount == 5)
+		{
+			varResult = CALL_ENTRYPOINT(function->GetScriptContext()->GetThreadContext(),
+										entryPoint, (JavascriptFunction*)function, args.Info,
+										args.Values[0], args.Values[1], args.Values[2], args.Values[3], args.Values[4]);
+		}
+		else if (argCount == 6)
+		{
+			varResult = CALL_ENTRYPOINT(function->GetScriptContext()->GetThreadContext(),
+										entryPoint, (JavascriptFunction*)function, args.Info,
+										args.Values[0], args.Values[1], args.Values[2], args.Values[3], args.Values[4],
+										args.Values[5]);
+		}
+		else if (argCount == 7)
+		{
+			varResult = CALL_ENTRYPOINT(function->GetScriptContext()->GetThreadContext(),
+										entryPoint, (JavascriptFunction*)function, args.Info,
+										args.Values[0], args.Values[1], args.Values[2], args.Values[3], args.Values[4],
+										args.Values[5], args.Values[6]);
+		}
+		else if (argCount == 8)
+		{
+			varResult = CALL_ENTRYPOINT(function->GetScriptContext()->GetThreadContext(),
+										entryPoint, (JavascriptFunction*)function, args.Info,
+										args.Values[0], args.Values[1], args.Values[2], args.Values[3], args.Values[4],
+										args.Values[5], args.Values[6], args.Values[7]);
+		}
+		else
+		{
+			ScriptContext* scriptContext = function->GetScriptContext();
+			varResult = scriptContext->GetLibrary()->GetUndefined();
+			AssertMsg(false, "CallFunction call with unsupported number of arguments");
+		}
+#endif
 
         return varResult;
     }
