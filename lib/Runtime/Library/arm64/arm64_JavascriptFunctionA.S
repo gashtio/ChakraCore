@@ -12,7 +12,7 @@
 ;Var arm64_CallFunction(JavascriptFunction* function, CallInfo info, uint argCount, Var* values, JavascriptMethod entryPoint)
     NESTED_ENTRY arm64_CallFunction, _TEXT, NoHandler
 
-    PROLOG_SAVE_REG_PAIR_REG_WRITEBACK fp, lr, -16          ; save fp/lr (implicitly saves SP in FP)
+    PROLOG_SAVE_REG_PAIR fp, lr, -16            ; save fp/lr (implicitly saves SP in FP)
 
     mov     x8, x4                              ; copy entry point to x8
     mov     x9, x3                              ; copy values pointer to x9
@@ -38,10 +38,19 @@ LOCAL_LABEL(CopyAll):
     ldr     x3, [x9, #8]                        ;
     ldr     x2, [x9, #0]                        ;
 LOCAL_LABEL(CopyZero):
+    ; push arguments on stack as well, as some functions rely on
+    ; address computation relative to the next frame's frame pointer.
+    ; EPILOG_STACK_RESTORE will clean up afterwards
+    sub     sp, sp, #64
+    stp     x0, x1, [sp]
+    stp     x2, x3, [sp, #16]
+    stp     x4, x5, [sp, #32]
+    stp     x6, x7, [sp, #48]
+
     blr     x8                                  ; call saved entry point
 
-    mov     sp, fp                              ; explicitly restore sp
-    EPILOG_RESTORE_REG_PAIR_REG_WRITEBACK fp, lr, 16        ; restore FP/LR
+    EPILOG_STACK_RESTORE                        ; explicitly restore sp
+    EPILOG_RESTORE_REG_PAIR fp, lr, 16          ; restore FP/LR
     EPILOG_RETURN                               ; return
 
 LOCAL_LABEL(StackAlloc):
@@ -64,7 +73,7 @@ LOCAL_LABEL(CopyLoop):
 ;Var Js:JavascriptFunction::DeferredDeserializeThunk(function, info, values[0], values[1], ..., values[n-2], values[n-1])
     NESTED_ENTRY _ZN2Js18JavascriptFunction24DeferredDeserializeThunkEPNS_16RecyclableObjectENS_8CallInfoEz, _TEXT, NoHandler
 
-    PROLOG_SAVE_REG_PAIR_REG_WRITEBACK fp, lr, -80  ; save parameter registers
+    PROLOG_SAVE_REG_PAIR fp, lr, -80  ; save parameter registers
     stp     x0, x1, [sp, #16]
     stp     x2, x3, [sp, #32]
     stp     x4, x5, [sp, #48]
@@ -77,7 +86,7 @@ LOCAL_LABEL(CopyLoop):
     ldp     x4, x5, [sp, #48]
     ldp     x2, x3, [sp, #32]
     ldp     x0, x1, [sp, #16]
-    EPILOG_RESTORE_REG_PAIR_REG_WRITEBACK fp, lr, 80
+    EPILOG_RESTORE_REG_PAIR fp, lr, 80
     br x16                   ; tail call to new entryPoint
 
     NESTED_END _ZN2Js18JavascriptFunction24DeferredDeserializeThunkEPNS_16RecyclableObjectENS_8CallInfoEz, _TEXT
@@ -86,7 +95,7 @@ LOCAL_LABEL(CopyLoop):
 ;Var Js:JavascriptFunction::DeferredParsingThunk(function, info, values[0], values[1], ..., values[n-2], values[n-1])
     NESTED_ENTRY _ZN2Js18JavascriptFunction20DeferredParsingThunkEPNS_16RecyclableObjectENS_8CallInfoEz, _TEXT, NoHandler
 
-    PROLOG_SAVE_REG_PAIR_REG_WRITEBACK fp, lr, -80
+    PROLOG_SAVE_REG_PAIR fp, lr, -80
     stp     x0, x1, [sp, #16]
     stp     x2, x3, [sp, #32]
     stp     x4, x5, [sp, #48]
@@ -102,7 +111,7 @@ LOCAL_LABEL(CopyLoop):
     ldp     x4, x5, [sp, #48]
     ldp     x2, x3, [sp, #32]
     ldp     x0, x1, [sp, #16]
-    EPILOG_RESTORE_REG_PAIR_REG_WRITEBACK fp, lr, 80
+    EPILOG_RESTORE_REG_PAIR fp, lr, 80
     br x16                   ; tail call to new entryPoint
 
     NESTED_END _ZN2Js18JavascriptFunction20DeferredParsingThunkEPNS_16RecyclableObjectENS_8CallInfoEz, _TEXT

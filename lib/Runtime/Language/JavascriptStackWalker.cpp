@@ -10,6 +10,31 @@
 
 #define AlignIt(VALUE, TYPE) (~(~((LONG_PTR)(VALUE) + (sizeof(TYPE)-1)) | (sizeof(TYPE)-1)))
 
+#if (defined(__IOS__) || defined(__ANDROID__)) && (defined(_ARM_) || defined(_ARM64_)) && DISABLE_JIT
+// Values found by inspecting disassembly of Js::InterpreterStackFrame::InterpreterThunk.
+// On ARM, the compiler places the first argument ($r0) in ($fp - 4)
+// On ARM64, the compiler places the first argument ($r0) in ($fp - 3)
+// When unwinding the stack, the StackWalker will be looking for the return address set in
+// InterpreterStackFrame::ProcessThunk by the PushPopFrameHelper, which in turn is the
+// return address of InterpreterStackFrame::InterpreterHelper. In our case this is called
+// from InterpreterStackFrame::InterpreterThunk.
+// JavascriptStackWalker::CheckJavascriptFrame will return true when the StackFrame's Next()
+// method set the currentFrame's return address to after the callsite of InterpreterHelper
+// and the frame pointer to InterpreterStackFrame::InterpreterThunk.
+// That is, all address calculations are done through the frame pointer of InterpreterStackFrame::InterpreterThunk.
+#if defined(ASMJS_PLAT)
+#error ASMJS not supported on iOS/Android ARM
+// TODO: ASMJS code paths also invoke InterpreterHelper and offsets might be wrong
+#endif
+#if defined(_ARM_)
+#define JsArgsInRegsPlatformOffset (Js::JavascriptFunctionArgIndex_Frame-4)
+#elif defined(_ARM64_)
+#define JsArgsInRegsPlatformOffset (0)
+#endif
+#else
+#define JsArgsInRegsPlatformOffset 0
+#endif
+
 namespace Js
 {
     Js::ArgumentsObject * JavascriptCallStackLayout::GetArgumentsObject() const
@@ -1034,7 +1059,7 @@ namespace Js
         }
         else
         {
-            return StackScriptFunction::GetCurrentFunctionObject((JavascriptFunction *)this->GetCurrentArgv()[JavascriptFunctionArgIndex_Function]);
+            return StackScriptFunction::GetCurrentFunctionObject((JavascriptFunction *)this->GetCurrentArgv()[JavascriptFunctionArgIndex_Function + JsArgsInRegsPlatformOffset]);
         }
     }
 
@@ -1049,7 +1074,7 @@ namespace Js
         else
 #endif
         {
-            this->GetCurrentArgv()[JavascriptFunctionArgIndex_Function] = function;
+            this->GetCurrentArgv()[JavascriptFunctionArgIndex_Function + JsArgsInRegsPlatformOffset] = function;
         }
     }
 
@@ -1080,7 +1105,7 @@ namespace Js
         }
         else
         {
-            callInfo = *(CallInfo const *)&this->GetCurrentArgv()[JavascriptFunctionArgIndex_CallInfo];
+            callInfo = *(CallInfo const *)&this->GetCurrentArgv()[JavascriptFunctionArgIndex_CallInfo + JsArgsInRegsPlatformOffset];
         }
 
         if (callInfo.Flags & Js::CallFlags_ExtraArg)

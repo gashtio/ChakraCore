@@ -9,7 +9,7 @@
 .global C_FUNC(_ZN2Js13ScriptContext35ProfileModeDeferredDeserializeThunkEPNS_16RecyclableObjectENS_8CallInfoEz)
 
 NESTED_ENTRY _ZN2Js13ScriptContext31ProfileModeDeferredParsingThunkEPNS_16RecyclableObjectENS_8CallInfoEz, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_REG_WRITEBACK fp, lr, -80  ; save volatile registers
+    PROLOG_SAVE_REG_PAIR fp, lr, -80  ; save volatile registers
     stp   x0, x1, [sp, #16]
     stp   x2, x3, [sp, #32]
     stp   x4, x5, [sp, #48]
@@ -24,13 +24,13 @@ NESTED_ENTRY _ZN2Js13ScriptContext31ProfileModeDeferredParsingThunkEPNS_16Recycl
     ldp   x4, x5, [sp, #48]
     ldp   x2, x3, [sp, #32]
     ldp   x0, x1, [sp, #16]
-    EPILOG_RESTORE_REG_PAIR_REG_WRITEBACK fp, lr, 80
+    EPILOG_RESTORE_REG_PAIR fp, lr, 80
     br    x16             ; jump (tail call) to new entryPoint
 NESTED_END _ZN2Js13ScriptContext31ProfileModeDeferredParsingThunkEPNS_16RecyclableObjectENS_8CallInfoEz, _TEXT
 
 
 NESTED_ENTRY _ZN2Js13ScriptContext35ProfileModeDeferredDeserializeThunkEPNS_16RecyclableObjectENS_8CallInfoEz, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_REG_WRITEBACK fp, lr, -80  ; save volatile registers
+    PROLOG_SAVE_REG_PAIR fp, lr, -80  ; save volatile registers
     stp   x0, x1, [sp, #16]
     stp   x2, x3, [sp, #32]
     stp   x4, x5, [sp, #48]
@@ -43,6 +43,6 @@ NESTED_ENTRY _ZN2Js13ScriptContext35ProfileModeDeferredDeserializeThunkEPNS_16Re
     ldp   x4, x5, [sp, #48]
     ldp   x2, x3, [sp, #32]
     ldp   x0, x1, [sp, #16]
-    EPILOG_RESTORE_REG_PAIR_REG_WRITEBACK fp, lr, 80
+    EPILOG_RESTORE_REG_PAIR fp, lr, 80
     br    x16             ; jump (tail call) to new entryPoint
 NESTED_END _ZN2Js13ScriptContext35ProfileModeDeferredDeserializeThunkEPNS_16RecyclableObjectENS_8CallInfoEz, _TEXT

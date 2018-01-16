@@ -69,13 +69,16 @@ C_FUNC(\Name\()_End):
         .cfi_rel_offset \reg, \ofs
 .endm
 
-.macro PROLOG_SAVE_REG_PAIR_REG_WRITEBACK reg1, reg2, ofs
+.macro PROLOG_SAVE_REG_PAIR reg1, reg2, ofs
         stp \reg1, \reg2, [sp, #\ofs]!
-        .cfi_rel_offset \reg1, \ofs
-        .cfi_rel_offset \reg2, \ofs + 8
+        ;.cfi_rel_offset \reg1, \ofs
+        ;.cfi_rel_offset \reg2, \ofs + 8
         .ifc \reg1, fp
         mov fp, sp
-        .cfi_def_cfa_register fp
+        ;.cfi_def_cfa_register fp
+        .cfi_def_cfa fp, 16
+        .cfi_offset lr, -8
+        .cfi_offset fp, -16
         .endif
 .endm
 
@@ -95,8 +98,9 @@ C_FUNC(\Name\()_End):
         .cfi_restore \reg1
 .endm
 
-.macro EPILOG_RESTORE_REG_PAIR_REG_WRITEBACK reg1, reg2, ofs
-        ldp \reg1, \reg2, [sp, #\ofs]!
+.macro EPILOG_RESTORE_REG_PAIR reg1, reg2, ofs
+        ldp \reg1, \reg2, [sp]
+        add sp, sp, #\ofs
         .cfi_restore \reg1
         .cfi_restore \reg2
 .endm
