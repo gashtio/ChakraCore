@@ -12,17 +12,57 @@
     va_list _vl;                                                    \
     va_start(_vl, callInfo);                                        \
     Js::Var* va = (Js::Var*)_vl
-#elif defined(__ANDROID__) || defined(__IOS__)
-// Just iterate and copy the values into a temp stack array
+#elif defined(__IOS__)
+#if !defined(_ARM_) && !defined(_ARM64_)
+#error iOS simulator not supported
+#endif
+// Argument positions on stack ensured by arm[64]_CallFunction.
+// By default, functions taking variadic arguments will have the named
+// parameters in registers and varidic ones on the stack.
+// There is some logic in the StackFrame class that relies on *all*
+// arguments being accessible at an offset from the callee's FP, that's
+// why arm[64]_CallFunction pushes *all* args. This, however, breaks
+// the logic of va_start, which takes the first stack argument and
+// if called from arm[64]_CallFunction, that would not be the argument
+// after |callInfo|, but |function| instead.
+// Since we always expect to have callee signature (function, callInfo, ...)
+// we can do a somewhat portable check which makes sure that the the first
+// 2 arguments are different from the |function| and |callinfo| ones.
+// A more robust check would be something along the lines of
+// "if (_ReturnAddress() - <fixed_offset> == &arm64_CallFunction)",
+// but that is too error prone if arm64_CallFunction changes.
+#ifndef _Function
+#define _Function function
+#endif
 #define DECLARE_ARGS_VARARRAY(va, ...)                              \
-	Js::Var* va = (Js::Var*)alloca(sizeof(Js::Var)*callInfo.Count); \
-	va_list _vl;                                                    \
-	va_start(_vl, callInfo);                                        \
-	for (int _i = 0; _i < callInfo.Count; ++_i)                     \
-	{                                                               \
-		va[_i] = va_arg(_vl, Js::Var);                              \
+    Js::Var* va = (Js::Var*)alloca(sizeof(Js::Var)*callInfo.Count); \
+    va_list _vl;                                                    \
+    va_start(_vl, callInfo);                                        \
+    for (int _i = 0; _i < callInfo.Count; ++_i)                     \
+    {                                                               \
+        va[_i] = va_arg(_vl, Js::Var);                              \
+        if (_i == 0 && va[_i] == _Function)                         \
+        {                                                           \
+            static_assert(sizeof(Js::CallInfo)==sizeof(Js::Var),    \
+                "sizeof(Js::CallInfo) must be == sizeof(Js::Var)"); \
+            Js::Var _var = va_arg(_vl, Js::Var);                    \
+            CallInfo ci = *reinterpret_cast<Js::CallInfo*>(&_var);  \
+            Assert(ci == callInfo); (void)ci;                       \
+            va[_i] = va_arg(_vl, Js::Var);                          \
+        }                                                           \
 	}                                                               \
 	va_end(_vl);
+#elif defined(__ANDROID__)
+// Just iterate and copy the values into a temp stack array
+#define DECLARE_ARGS_VARARRAY(va, ...)                              \
+    Js::Var* va = (Js::Var*)alloca(sizeof(Js::Var)*callInfo.Count); \
+    va_list _vl;                                                    \
+    va_start(_vl, callInfo);                                        \
+    for (int _i = 0; _i < callInfo.Count; ++_i)                     \
+    {                                                               \
+        va[_i] = va_arg(_vl, Js::Var);                              \
+    }                                                               \
+    va_end(_vl);
 #else
 // We use a custom calling convention to invoke JavascriptMethod based on
 // System ABI. At entry of JavascriptMethod the stack layout is:

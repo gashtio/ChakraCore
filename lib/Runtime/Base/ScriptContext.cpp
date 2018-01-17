@@ -3947,6 +3947,9 @@ namespace Js
     Var ScriptContext::DebugProfileProbeThunk(RecyclableObject* callable, CallInfo callInfo, ...)
     {
 #if defined(ENABLE_SCRIPT_DEBUGGING) || defined(ENABLE_SCRIPT_PROFILING)
+#if defined(__IOS__)
+#define _Function callable
+#endif
         RUNTIME_ARGUMENTS(args, callInfo);
 
         Assert(!WasmScriptFunction::Is(callable));
